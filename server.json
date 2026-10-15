@@ -1,0 +1,23 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.nareyko/mcp-yacht-specs",
+  "description": "Zero-Network MCP server for FairHelm yacht passport specs, hydrodynamic coefficients, and formula pointers (93 European & Nordic cruising models). Bundled local JSON; no HTTP to api.fairhelm.com.",
+  "title": "FairHelm Yacht Specs",
+  "websiteUrl": "https://fairhelm.com/en/yachts/formulas/",
+  "repository": {
+    "url": "https://github.com/nareyko/mcp-yacht-specs",
+    "source": "github"
+  },
+  "version": "1.0.1",
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@nareyko/mcp-yacht-specs",
+      "version": "1.0.1",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

@@ -1,0 +1,211 @@
+openapi: 3.1.0
+info:
+  title: FairHelm Yacht Specs (static snapshot)
+  version: 1.0.0
+  summary: Read-only yacht passport specs and coefficients for Custom GPT and agents
+  description: |
+    Static yacht specs for the Custom GPT «FairHelm Yacht & Survey Advisor».
+    No backend load: every response is a prebuilt JSON file.
+
+    Use the static CDN paths on fairhelm.com (`/open-data/yacht-specs/v1/*`).
+    The api.fairhelm.com routes serve the same prebuilt JSON from disk, without Postgres.
+
+    MCP agents should run `@nareyko/mcp-yacht-specs` locally with the bundled
+    snapshot and need no network. This OpenAPI file is for Custom GPT Actions only.
+
+    Out of scope: listing decoding and CapEx (BoatAdDecoder).
+  x-fairhelm-system-prompt: |
+    You are FairHelm Yacht & Survey Advisor. Answer as an engineer: short,
+    exact, no sales language.
+    Take passport dimensions and coefficients only from the yacht-specs Actions.
+    When you name a model, cite canonical_model_url and survey_service_url from
+    the response links.
+    Do not invent a CE category; if the snapshot has none, say so.
+    Do not decode Boat24 or YachtWorld listings and do not estimate CapEx.
+    Send those requests to FairHelm listing-review.
+  contact:
+    name: FairHelm
+    url: https://fairhelm.com
+  license:
+    name: MIT
+servers:
+  - url: https://fairhelm.com
+    description: Static open-data CDN (preferred)
+  - url: https://api.fairhelm.com
+    description: Optional static-file mirror (no DB)
+  - url: http://localhost:8180
+    description: Local API mirror
+tags:
+  - name: yacht-specs-public
+paths:
+  /open-data/yacht-specs/v1/index.json:
+    get:
+      operationId: listYachtModelsStatic
+      tags: [yacht-specs-public]
+      summary: Static model index (CDN)
+      responses:
+        "200":
+          description: Index JSON
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelIndex"
+  /open-data/yacht-specs/v1/models.json:
+    get:
+      operationId: getYachtSpecsSnapshotStatic
+      tags: [yacht-specs-public]
+      summary: Full static snapshot (CDN)
+      responses:
+        "200":
+          description: Full snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Snapshot"
+  /api/public/v1/yacht-specs/health:
+    get:
+      operationId: yachtSpecsHealth
+      tags: [yacht-specs-public]
+      summary: Mirror health
+      security:
+        - ApiKeyAuth: []
+        - {}
+      responses:
+        "200":
+          description: OK
+  /api/public/v1/yacht-specs/formulas:
+    get:
+      operationId: listFormulaPointers
+      tags: [yacht-specs-public]
+      summary: Formula pointers (mirror)
+      security:
+        - ApiKeyAuth: []
+        - {}
+      responses:
+        "200":
+          description: Formulas
+  /api/public/v1/yacht-specs/models:
+    get:
+      operationId: listYachtModels
+      tags: [yacht-specs-public]
+      summary: List models (mirror of static snapshot)
+      security:
+        - ApiKeyAuth: []
+        - {}
+      parameters:
+        - name: brand
+          in: query
+          schema: { type: string }
+        - name: q
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+      responses:
+        "200":
+          description: Model list
+  /api/public/v1/yacht-specs/models/{brand_slug}/{model_slug}:
+    get:
+      operationId: getYachtSpecs
+      tags: [yacht-specs-public]
+      summary: One model from static snapshot
+      security:
+        - ApiKeyAuth: []
+        - {}
+      parameters:
+        - name: brand_slug
+          in: path
+          required: true
+          schema: { type: string }
+        - name: model_slug
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Model specs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/YachtSpecs"
+        "404":
+          description: Not found
+  /api/public/v1/yacht-specs/snapshot:
+    get:
+      operationId: getYachtSpecsSnapshot
+      tags: [yacht-specs-public]
+      summary: Full snapshot mirror
+      security:
+        - ApiKeyAuth: []
+        - {}
+      responses:
+        "200":
+          description: Snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Snapshot"
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  schemas:
+    ModelIndex:
+      type: object
+      properties:
+        schema_version: { type: integer }
+        model_count: { type: integer }
+        models:
+          type: array
+          items:
+            type: object
+            properties:
+              brand_slug: { type: string }
+              model_slug: { type: string }
+              name: { type: string }
+              canonical_model_url: { type: string, format: uri }
+        formulas:
+          type: array
+          items:
+            type: object
+            properties:
+              slug: { type: string }
+              title: { type: string }
+              url: { type: string, format: uri }
+    Snapshot:
+      type: object
+      properties:
+        schema_version: { type: integer }
+        model_count: { type: integer }
+        models:
+          type: array
+          items:
+            $ref: "#/components/schemas/YachtSpecs"
+    YachtSpecs:
+      type: object
+      properties:
+        brand_slug: { type: string }
+        model_slug: { type: string }
+        name: { type: string }
+        loa_m: { type: [number, "null"] }
+        lwl_m: { type: [number, "null"] }
+        beam_m: { type: [number, "null"] }
+        draft_m: { type: [number, "null"] }
+        displacement_kg: { type: [number, "null"] }
+        ballast_kg: { type: [number, "null"] }
+        sail_area_m2: { type: [number, "null"] }
+        coefficients:
+          type: object
+          additionalProperties: { type: [number, "null"] }
+        links:
+          type: object
+          properties:
+            canonical_model_url: { type: string, format: uri }
+            formulas_methodology_url: { type: string, format: uri }
+            survey_service_url: { type: string, format: uri }
