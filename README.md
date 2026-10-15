@@ -95,4 +95,4 @@ Public catalog fields only. No CRM, leads, or broker private data.
 
 ## License
 
-MIT — see [LICENSE](./LICENSE).
+MIT. See [LICENSE](./LICENSE).
